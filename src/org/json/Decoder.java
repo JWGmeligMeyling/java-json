@@ -157,7 +157,7 @@ public final class Decoder<T extends JSONSerializable> {
 		} else if (type.equals(Double.class) || type.equals(double.class)) {
 			return Conversion.DoubleValueOf(strvalue);
 		} else if( JSONSerializable.class.isAssignableFrom(type)) {
-			return new Decoder(type, strvalue).decode();	
+			return decode((Class<? extends JSONSerializable>) type, strvalue);
 		} else {
 			throw new ParseException(type.getCanonicalName() + " is not serializable");
 		}
