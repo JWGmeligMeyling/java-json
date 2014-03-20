@@ -74,8 +74,11 @@ public final class Decoder<T extends JSONSerializable> {
 			SWITCH : switch(c) {
 			case ' ': // Ignore spaces
 				continue LOOP;
-			case ':':
-			case ',': //These values separate keys and values, switch modes and finalize method
+			case ':': // After a : follows a value, switch modes and finalize method
+				if(!isKey) throw new ParseException("Unexpected value");
+				break SWITCH;
+			case ',': //  After a , follows a key, switch modes and finalize method
+				if(isKey) throw new ParseException("Unexpected key");
 				break SWITCH;
 			case '"':
 			case '\'':  // Quoted string, find the next quote, and append the substring
@@ -89,6 +92,7 @@ public final class Decoder<T extends JSONSerializable> {
 				}
 				throw new ParseException("Unexpected end of input");
 			case '{': // We're entering a new JSON Object
+				if(isKey) throw new ParseException("Cannot start JSON Object as key");
 				depth++;
 				sb.append(c);
 				while(hasNext()) {

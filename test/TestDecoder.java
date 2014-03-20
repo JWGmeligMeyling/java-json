@@ -123,6 +123,32 @@ public class TestDecoder {
 	}
 	
 	
+	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput1() {
+		String input = "{{}}";
+		Decoder.decode(EmptyObjectWrapper.class, input);
+	}
+
+	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput2() {
+		String input = "{ a, b : true}";
+		Decoder.decode(EmptyObjectWrapper.class, input);
+	}
+
+	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput3() {
+		String input = "{ a : \"a\" : \"a\", b : true}";
+		Decoder.decode(EmptyObjectWrapper.class, input);
+	}
+
+	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput4() {
+		String input = "{ a : \"as\"df\", b : true}";
+		Decoder.decode(EmptyObjectWrapper.class, input);
+	}
+
+	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput5() {
+		String input = "{ a : \"as\", \"df\", b : true}";
+		Decoder.decode(EmptyObjectWrapper.class, input);
+	}
+
+
 	public static class EmptyObjectWrapper implements JSONSerializable {}
 
 	public static class PlainObjectWrapper implements JSONSerializable {
