@@ -40,6 +40,8 @@ import java.util.Map;
  */
 public final class Decoder<T extends JSONSerializable> {
 
+	private final static String NULL = "null";
+	private final static String EMPTY_STRING = "";
 	private final Class<T> klass;
 	private final int length;
 	private final String s;
@@ -91,16 +93,17 @@ public final class Decoder<T extends JSONSerializable> {
 					}
 				}
 				throw new ParseException("Unexpected end of input");
+			case '[':
 			case '{': // We're entering a new JSON Object
-				if(isKey) throw new ParseException("Cannot start JSON Object as key");
+				if(isKey) throw new ParseException("Expected key a key, but got a value instead");
 				depth++;
 				sb.append(c);
 				while(hasNext()) {
 					char next = next();
 					sb.append(next);
-					if(next == '{') {
+					if(next == '{' || next == '[') {
 						depth++;
-					} else if ( next == '}' ) {
+					} else if (next == '}' || next == ']') {
 						depth--;
 						if(depth == 1) { // At original level, continue upper loop
 							continue LOOP;
@@ -118,7 +121,7 @@ public final class Decoder<T extends JSONSerializable> {
 			}
 			// If we've got here, a key or value is complete
 			if(isKey) {
-				key = Conversion.StringValueOf(sb.toString());
+				key = StringValueOf(sb.toString());
 			} else {
 				pairs.put(key, sb.toString());
 			}
@@ -138,152 +141,6 @@ public final class Decoder<T extends JSONSerializable> {
 	
 	private char previous() {
 		return s.charAt(index-2);
-	}
-	
-	@SuppressWarnings("unchecked")
-	private static Object strToValue(Class<?> type, String strvalue) {
-		if(strvalue == null) {
-			return null;
-		} else if(type.equals(String.class)) {
-			return Conversion.StringValueOf(strvalue);
-		} else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
-			return Conversion.BooleanValueOf(strvalue);
-		} else if (type.equals(Byte.class) || type.equals(byte.class)) {
-			return Conversion.ByteValueOf(strvalue);
-		} else if ( type.equals(Short.class) || type.equals(short.class)) {
-			return Conversion.ShortValueOf(strvalue);
-		} else if (type.equals(Integer.class) || type.equals(int.class)) {
-			return Conversion.IntegerValueOf(strvalue);
-		} else if (type.equals(Long.class) || type.equals(long.class)) {
-			return Conversion.LongValueOf(strvalue);
-		} else if (type.equals(Float.class) || type.equals(float.class)) {
-			return Conversion.FloatValueOf(strvalue);
-		} else if (type.equals(Double.class) || type.equals(double.class)) {
-			return Conversion.DoubleValueOf(strvalue);
-		} else if( JSONSerializable.class.isAssignableFrom(type)) {
-			return decode((Class<? extends JSONSerializable>) type, strvalue);
-		} else {
-			throw new ParseException(type.getCanonicalName() + " is not serializable");
-		}
-	}
-
-	private static class Conversion {
-
-		private final static String NULL = "null";
-		
-		/**
-		 * Get an escaped String ValueOf from input
-		 * @param s
-		 * @return
-		 */
-		public static String StringValueOf(String s) {
-			if(s.equalsIgnoreCase(NULL))
-				return null;
-			int l = s.length();
-			char start = 0;
-			StringBuilder sb = new StringBuilder(l);
-			CHARS : for(int i = 0; i < l; i++ ) {
-				char c = s.charAt(i);
-				switch(c) {
-				case ' ':
-					if(start == 0) {
-						// Skip if begin of String, return if end
-						if(sb.length() > 0) {
-							break CHARS;
-						}
-					} else {
-						// Append spaces only if wrapped between quotes
-						sb.append(c);
-					}
-					break;
-				case '"':
-				case '\'':
-					if(sb.length() == 0 ) {
-						// This quote marks the start of the String,
-						// set the start char to the current char
-						start = c;
-					} else if ( c == start ) {
-						// If equal to the start char, the end of the String
-						// is reached
-						break CHARS;
-					} else {
-						// If not equal to the start char, append
-						// it to the String
-						sb.append(c);
-					}
-					break;
-				case '\\':
-					if(i < l) {
-						// Append escaped character
-						char next = s.charAt(++i);
-						sb.append(next);
-					} else {
-						sb.append(c);
-					}
-					break;
-				default:
-					// Append the character
-					sb.append(c);
-					break;
-				}
-			}
-			return sb.toString();
-		}
-		
-		public static Boolean BooleanValueOf(String s) {
-			if(s.equalsIgnoreCase(NULL)) return null;
-			return Boolean.valueOf(s);
-		}
-		
-		public static Byte ByteValueOf(String s) {
-			if(s.equalsIgnoreCase(NULL)) return null;
-			return Byte.valueOf(s);
-		}
-		
-		public static Short ShortValueOf(String s) {
-			if(s.equalsIgnoreCase(NULL)) return null;
-			return Short.valueOf(s);
-		}
-		
-		public static Integer IntegerValueOf(String s) {
-			if(s.equalsIgnoreCase(NULL)) return null;
-			return Integer.valueOf(s);
-		}
-		
-		public static Long LongValueOf(String s) {
-			if(s.equalsIgnoreCase(NULL)) return null;
-			return Long.valueOf(s);
-		}
-		
-		public static Float FloatValueOf(String s) {
-			if(s.equalsIgnoreCase(NULL)) return null;
-			return Float.valueOf(s);
-		}
-		
-		public static Double DoubleValueOf(String s) {
-			if(s.equalsIgnoreCase(NULL)) return null;
-			return Double.valueOf(s);
-		}
-		
-		// public static Date DateValueOf(String s) {
-		//	if(s.equalsIgnoreCase(NULL)) return null;
-		//	return new Date(longValueOf(s));
-		//}
-	}
-	
-	
-	public static class ParseException extends RuntimeException {
-		
-		private static final long serialVersionUID = -5453235887713621500L;
-
-		ParseException(Exception e) {
-			super("JSON String could not be parsed", e);
-		}
-
-		ParseException(String string) {
-			super(string);
-		}
-		
 	}
 	
 	private T decode() throws ParseException {
@@ -319,7 +176,7 @@ public final class Decoder<T extends JSONSerializable> {
 							// Because constructor parameter names are lost after compilation,
 							// constructor parameters need to specify their attribute name in the annotation
 							name = ((JSONAttribute) a).name();
-							if(name.equals("")) throw new ParseException("Attribute name should be specified for constructor parameters");
+							if(name.equals(EMPTY_STRING)) throw new ParseException("Attribute name should be specified for constructor parameters");
 							// Check if this field can be filled based on the input
 							String strvalue = pairs.get(name);
 							// Skip to the next constructor if no value could be found
@@ -349,7 +206,7 @@ public final class Decoder<T extends JSONSerializable> {
 					// Fetch the attribute name at which the value can be found in the JSON input
 					// If no value is defined in the annotation, use the field name in the class
 					String name = annotation.name();
-					if(name.equals("")) name = f.getName();
+					if(name.equals(EMPTY_STRING)) name = f.getName();
 					// Fetch the value, if no value is available and the field is required, throw an exception
 					String strvalue = pairs.get(name);
 					if(strvalue == null ) {
@@ -361,13 +218,148 @@ public final class Decoder<T extends JSONSerializable> {
 					}
 				}
 			}
-
+	
 			return obj;
 		} catch ( ParseException e ) {
 			throw e; // Forward parse exceptions
 		} catch ( Exception e ) {
 			throw new ParseException(e); // Wrap all other exceptions (reflection exceptions basically)
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Object strToValue(Class<?> type, String strvalue) {
+		if(strvalue == null) {
+			return null;
+		} else if(type.equals(String.class)) {
+			return StringValueOf(strvalue);
+		} else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
+			return BooleanValueOf(strvalue);
+		} else if (type.equals(Byte.class) || type.equals(byte.class)) {
+			return ByteValueOf(strvalue);
+		} else if ( type.equals(Short.class) || type.equals(short.class)) {
+			return ShortValueOf(strvalue);
+		} else if (type.equals(Integer.class) || type.equals(int.class)) {
+			return IntegerValueOf(strvalue);
+		} else if (type.equals(Long.class) || type.equals(long.class)) {
+			return LongValueOf(strvalue);
+		} else if (type.equals(Float.class) || type.equals(float.class)) {
+			return FloatValueOf(strvalue);
+		} else if (type.equals(Double.class) || type.equals(double.class)) {
+			return DoubleValueOf(strvalue);
+		} else if( JSONSerializable.class.isAssignableFrom(type)) {
+			return decode((Class<? extends JSONSerializable>) type, strvalue);
+		} else {
+			throw new ParseException(type.getCanonicalName() + " is not serializable");
+		}
+	}
+
+	/**
+	 * Get an escaped String ValueOf from input
+	 * @param s
+	 * @return
+	 */
+	public static String StringValueOf(String s) {
+		if(s.equalsIgnoreCase(NULL))
+			return null;
+		int l = s.length();
+		char start = 0;
+		StringBuilder sb = new StringBuilder(l);
+		CHARS : for(int i = 0; i < l; i++ ) {
+			char c = s.charAt(i);
+			switch(c) {
+			case ' ':
+				if(start == 0) {
+					// Skip if begin of String, return if end
+					if(sb.length() > 0) {
+						break CHARS;
+					}
+				} else {
+					// Append spaces only if wrapped between quotes
+					sb.append(c);
+				}
+				break;
+			case '"':
+			case '\'':
+				if(sb.length() == 0 ) {
+					// This quote marks the start of the String,
+					// set the start char to the current char
+					start = c;
+				} else if ( c == start ) {
+					// If equal to the start char, the end of the String
+					// is reached
+					break CHARS;
+				} else {
+					// If not equal to the start char, append
+					// it to the String
+					sb.append(c);
+				}
+				break;
+			case '\\':
+				if(i < l) {
+					// Append escaped character
+					char next = s.charAt(++i);
+					sb.append(next);
+				} else {
+					sb.append(c);
+				}
+				break;
+			default:
+				// Append the character
+				sb.append(c);
+				break;
+			}
+		}
+		return sb.toString();
+	}
+
+	public static Boolean BooleanValueOf(String s) {
+		if(s.equalsIgnoreCase(NULL)) return null;
+		return Boolean.valueOf(s);
+	}
+
+	public static Byte ByteValueOf(String s) {
+		if(s.equalsIgnoreCase(NULL)) return null;
+		return Byte.valueOf(s);
+	}
+
+	public static Short ShortValueOf(String s) {
+		if(s.equalsIgnoreCase(NULL)) return null;
+		return Short.valueOf(s);
+	}
+
+	public static Integer IntegerValueOf(String s) {
+		if(s.equalsIgnoreCase(NULL)) return null;
+		return Integer.valueOf(s);
+	}
+
+	public static Long LongValueOf(String s) {
+		if(s.equalsIgnoreCase(NULL)) return null;
+		return Long.valueOf(s);
+	}
+
+	public static Float FloatValueOf(String s) {
+		if(s.equalsIgnoreCase(NULL)) return null;
+		return Float.valueOf(s);
+	}
+
+	public static Double DoubleValueOf(String s) {
+		if(s.equalsIgnoreCase(NULL)) return null;
+		return Double.valueOf(s);
+	}	
+	
+	public static class ParseException extends RuntimeException {
+		
+		private static final long serialVersionUID = -5453235887713621500L;
+
+		ParseException(Exception e) {
+			super("JSON String could not be parsed", e);
+		}
+
+		ParseException(String string) {
+			super(string);
+		}
+		
 	}
 	
 	/**
