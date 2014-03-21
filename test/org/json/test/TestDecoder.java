@@ -148,5 +148,32 @@ public class TestDecoder {
 		String input = "{ a : \"as\", \"df\", b : true}";
 		Decoder.decode(EmptyObjectWrapper.class, input);
 	}
-
+	
+	@Test public final void testEscapedQuote() {
+		String input = "{\"value\" : \"te\\\"st\"}";
+		PlainObjectWrapper result = Decoder.decode(PlainObjectWrapper.class, input);
+		PlainObjectWrapper expected = new PlainObjectWrapper();
+		expected.value = "te\"st";
+		assertEquals(expected, result);
+	}
+	
+	@Test public final void testEscapedBracket() {
+		String input = "{\"value\" : \"te\\}st\"}";
+		PlainObjectWrapper result = Decoder.decode(PlainObjectWrapper.class, input);
+		PlainObjectWrapper expected = new PlainObjectWrapper();
+		expected.value = "te}st";
+		assertEquals(expected, result);
+	}
+	
+	@Test public final void testObjWithUnusedArray() {
+		String input = "{\"value\" : \"test\", arr : [ 1,2,3 ], value1:2342342, value2:23.2342352353, value3:true}";
+		PlainObjectWrapper result = Decoder.decode(PlainObjectWrapper.class, input);
+		PlainObjectWrapper expected = new PlainObjectWrapper();
+		expected.value = "test";
+		expected.value1  = 2342342;
+		expected.value2 = 23.2342352353;
+		expected.value3 = true;
+		assertEquals(expected, result);
+	}
+	
 }

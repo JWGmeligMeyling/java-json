@@ -86,7 +86,7 @@ public final class Decoder<T extends JSONSerializable> {
 				while(hasNext()) {
 					char next = next();
 					sb.append(next);
-					if(next == c ) {
+					if(next == c && previous() != '\\') {
 						continue LOOP;
 					}
 				}
@@ -134,6 +134,10 @@ public final class Decoder<T extends JSONSerializable> {
 	
 	private char next() {
 		return s.charAt(index++);
+	}
+	
+	private char previous() {
+		return s.charAt(index-2);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -226,91 +230,39 @@ public final class Decoder<T extends JSONSerializable> {
 			return sb.toString();
 		}
 		
-		public static boolean booleanValueOf(String s) {
-			return Boolean.parseBoolean(s);
-		}
-		
 		public static Boolean BooleanValueOf(String s) {
 			if(s.equalsIgnoreCase(NULL)) return null;
-			return Boolean.valueOf(booleanValueOf(s));
-		}
-		
-		public static byte byteValueOf(String s) {
-			try {
-				return Byte.parseByte(s);
-			} catch ( NumberFormatException e ) {
-				throw new ParseException(e);
-			}
+			return Boolean.valueOf(s);
 		}
 		
 		public static Byte ByteValueOf(String s) {
 			if(s.equalsIgnoreCase(NULL)) return null;
-			return Byte.valueOf(byteValueOf(s));
-		}
-		
-		public static short shortValueOf(String s) {
-			try {
-				return Short.parseShort(s);
-			} catch ( NumberFormatException e ) {
-				throw new ParseException(e);
-			}
+			return Byte.valueOf(s);
 		}
 		
 		public static Short ShortValueOf(String s) {
 			if(s.equalsIgnoreCase(NULL)) return null;
-			return Short.valueOf(shortValueOf(s));
-		}
-		
-		public static int intValueOf(String s) {
-			try {
-				return Integer.parseInt(s);
-			} catch ( NumberFormatException e ) {
-				throw new ParseException(e);
-			}
+			return Short.valueOf(s);
 		}
 		
 		public static Integer IntegerValueOf(String s) {
 			if(s.equalsIgnoreCase(NULL)) return null;
-			return Integer.valueOf(intValueOf(s));
-		}
-		
-		public static long longValueOf(String s) {
-			try {
-				return Long.parseLong(s);
-			} catch ( NumberFormatException e ) {
-				throw new ParseException(e);
-			}
+			return Integer.valueOf(s);
 		}
 		
 		public static Long LongValueOf(String s) {
 			if(s.equalsIgnoreCase(NULL)) return null;
-			return Long.valueOf(longValueOf(s));
-		}
-		
-		public static float floatValueOf(String s) {
-			try {
-				return Float.parseFloat(s);
-			} catch ( NumberFormatException e ) {
-				throw new ParseException(e);
-			}
+			return Long.valueOf(s);
 		}
 		
 		public static Float FloatValueOf(String s) {
 			if(s.equalsIgnoreCase(NULL)) return null;
-			return Float.valueOf(floatValueOf(s));
-		}
-		
-		public static double doubleValueOf(String s) {
-			try {
-				return Double.parseDouble(s);
-			} catch ( NumberFormatException e ) {
-				throw new ParseException(e);
-			}
+			return Float.valueOf(s);
 		}
 		
 		public static Double DoubleValueOf(String s) {
 			if(s.equalsIgnoreCase(NULL)) return null;
-			return Double.valueOf(doubleValueOf(s));
+			return Double.valueOf(s);
 		}
 		
 		// public static Date DateValueOf(String s) {
