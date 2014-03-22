@@ -87,8 +87,8 @@ Corresponding JSON fragment:
 {
 	stringList : [ "value1", "value2" ]
 }
-*Note: this works for Numbers and JSONSerializable objects as well*
 ```
+*Note: this works for Numbers and JSONSerializable objects as well*
 ### Complex structures (objects within objects)
 ```java
 public class ComplexObject implements JSONSerializable {
