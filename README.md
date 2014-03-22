@@ -27,7 +27,20 @@ Instances of the class above can be serialized to and deserialized from the JSON
 	value3: true
 }
 ```
-This JSON fragment can be decoded using `Decoder.decode(PlainObjectWrapper.class, inputString)`
+This JSON fragment can be decoded using `Decoder.decode(PlainObjectWrapper.class, inputString)`. Let's look at the following code fragment:
+```java
+String input = "{\"value\" : \"test\", value1:2342342, value2:23.2342352353, value3:true}";
+PlainObjectWrapper result = Decoder.decode(PlainObjectWrapper.class, input);
+```
+`result` now contains an instance of `PlainObjectWrapper` with the attributes set to the value above. When we want to convert this instance to JSON instead, we can use the following fragment:
+```java
+PlainObjectWrapper object = new PlainObjectWrapper();
+object.value = "test";
+object.value1  = 2342342;
+object.value2 = 23.2342352353;
+object.value3 = true;
+String output = Encoder.encode(object);
+```
 
 ### Different attribute names in JSON
 When you want attribute names to differ from the field names in the class, they can be set as name for the annotation.
@@ -50,6 +63,7 @@ public class POWWithRequirements implements JSONSerializable {
 ```
 
 ### Final attributes set through constructor
+*Note: it is required to set the field name for constructor parameters, because the parameter names are lost in the Java compiler*
 ```java
 public class FinalFields implements JSONSerializable {
 	@JSONAttribute public final String finalField;
@@ -87,8 +101,8 @@ Corresponding JSON fragment:
 {
 	stringList : [ "value1", "value2" ]
 }
-*Note: this works for Numbers and JSONSerializable objects as well*
 ```
+*Note: this works for Numbers and JSONSerializable objects as well*
 ### Complex structures (objects within objects)
 ```java
 public class ComplexObject implements JSONSerializable {
