@@ -6,8 +6,8 @@ import java.io.InputStream;
 import java.util.Map;
 
 import org.json.Decoder;
-import org.json.Decoder.ParseException;
 import org.json.JSONAttribute;
+import org.json.JSONException;
 import org.json.JSONSerializable;
 
 public class example {
@@ -48,7 +48,7 @@ public class example {
 		
 	}
 	
-	public static void main(String[] args) throws ParseException, IOException {
+	public static void main(String[] args) throws IOException, JSONException {
 		InputStream in = new FileInputStream("example/org/java/example/example.data.json");
 		System.out.println(Decoder.decode(User.class, in));
 	}

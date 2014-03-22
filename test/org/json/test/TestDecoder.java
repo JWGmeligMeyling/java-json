@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.json.Decoder;
+import org.json.JSONException;
 import org.json.test.TestWrappers.ObjectWithArray;
 import org.json.test.TestWrappers.*;
 import org.junit.Test;
@@ -60,7 +61,7 @@ public class TestDecoder {
 	 * This test case tests if the decoder throws an exception as expected, when
 	 * a required attribute is undefined in the input string.
 	 */
-	@Test(expected=Decoder.ParseException.class) public final void testPOWWithRequirementsFail() {
+	@Test(expected=JSONException.class) public final void testPOWWithRequirementsFail() {
 		String input = "{ optional : \"_optional\" }";
 		POWWithRequirements result = Decoder.decode(POWWithRequirements.class, input);
 		POWWithRequirements expected = new POWWithRequirements();
@@ -132,7 +133,7 @@ public class TestDecoder {
 	 * Values in a JSON Object should always be an key value pair, and a Key can only
 	 * be a String or Number (which is treated as a String as well)
 	 */
-	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput1() {
+	@Test(expected=JSONException.class) public final void testInvalidInput1() {
 		String input = "{{}}";
 		Decoder.decode(EmptyObjectWrapper.class, input);
 	}
@@ -140,7 +141,7 @@ public class TestDecoder {
 	/**
 	 * Values in a JSON Object should always be key/value pairs. 
 	 */
-	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput2() {
+	@Test(expected=JSONException.class) public final void testInvalidInput2() {
 		String input = "{ a, b : true}";
 		Decoder.decode(EmptyObjectWrapper.class, input);
 	}
@@ -148,7 +149,7 @@ public class TestDecoder {
 	/**
 	 * Keys and values should be separated by a colon, multiple colons cannot be parsed
 	 */
-	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput3() {
+	@Test(expected=JSONException.class) public final void testInvalidInput3() {
 		String input = "{ a : \"a\" : \"a\", b : true}";
 		Decoder.decode(EmptyObjectWrapper.class, input);
 	}
@@ -156,7 +157,7 @@ public class TestDecoder {
 	/**
 	 * Quotes should be escaped
 	 */
-	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput4() {
+	@Test(expected=JSONException.class) public final void testInvalidInput4() {
 		String input = "{ a : \"as\"df\", b : true}";
 		Decoder.decode(EmptyObjectWrapper.class, input);
 	}
@@ -164,7 +165,7 @@ public class TestDecoder {
 	/**
 	 * Key/value pairs
 	 */
-	@Test(expected=Decoder.ParseException.class) public final void testInvalidInput5() {
+	@Test(expected=JSONException.class) public final void testInvalidInput5() {
 		String input = "{ a : \"as\", \"df\", b : true}";
 		Decoder.decode(EmptyObjectWrapper.class, input);
 	}
@@ -172,7 +173,7 @@ public class TestDecoder {
 	/**
 	 * Array values should not be separated by a colon
 	 */
-	@Test(expected=Decoder.ParseException.class) public final void testArrayWithColon() {
+	@Test(expected=JSONException.class) public final void testArrayWithColon() {
 		String input = "{ stringValue : \"myStringvalue\", stringList : [ \"arrayValue1\" : \"array Value With Space\" ] }";
 		Decoder.decode(ObjectWithArray.class, input);
 	}
@@ -180,7 +181,7 @@ public class TestDecoder {
 	/**
 	 * Arrays should not be closed with an unmatched Object bracket
 	 */
-	@Test(expected=Decoder.ParseException.class) public final void testArrayWithCloseBracket() {
+	@Test(expected=JSONException.class) public final void testArrayWithCloseBracket() {
 		String input = "{ stringValue : \"myStringvalue\", stringList : [ \"arrayValue1\" , \"array Value With Space\" } ] }";
 		Decoder.decode(ObjectWithArray.class, input);
 	}

@@ -79,7 +79,7 @@ public final class Decoder<T extends JSONSerializable> {
 			// Read the first character
 			this.next = reader.read();
 		} catch (IOException e) {
-			throw new ParseException(e);
+			throw new JSONException(e);
 		}
 		parse();
 	}
@@ -135,7 +135,7 @@ public final class Decoder<T extends JSONSerializable> {
 				 * we're in a JSONArray, an exception is thrown as well; values
 				 * in a JSON Array should be separated by commas.
 				 */
-				if(isArray || !isKey) throw new ParseException("Unexpected value");
+				if(isArray || !isKey) throw new JSONException("Unexpected value");
 				break SWITCH;
 			case ',': 
 				/*
@@ -164,7 +164,7 @@ public final class Decoder<T extends JSONSerializable> {
 						continue LOOP;
 					}
 				}
-				throw new ParseException("Unexpected end of input");
+				throw new JSONException("Unexpected end of input");
 			case '[':
 				/*
 				 * This bracket marks the beginning of an array. If we're at
@@ -179,7 +179,7 @@ public final class Decoder<T extends JSONSerializable> {
 					isArray = true;
 					continue LOOP;
 				}
-				if(isKey) throw new ParseException("Expected key a key, but got a value instead");
+				if(isKey) throw new JSONException("Expected key a key, but got a value instead");
 				sb.append(c);
 				while(hasNext()) {
 					char next = next();
@@ -193,7 +193,7 @@ public final class Decoder<T extends JSONSerializable> {
 						}
 					}
 				}
-				throw new ParseException("Malformed input");
+				throw new JSONException("Malformed input");
 			case '{':
 				/*
 				 * This bracket marks the beginning of an object. If we're at
@@ -204,7 +204,7 @@ public final class Decoder<T extends JSONSerializable> {
 				 * between to the StringBuilder. These are parsed recursively
 				 * while instantiating this object.
 				 */
-				if(isKey && !isArray && depth != 0) throw new ParseException("Expected key a key, but got a value instead");
+				if(isKey && !isArray && depth != 0) throw new JSONException("Expected key a key, but got a value instead");
 				depth++;
 				if(depth > 1 ) {
 					sb.append(c);
@@ -220,7 +220,7 @@ public final class Decoder<T extends JSONSerializable> {
 							}
 						}
 					}
-					throw new ParseException("Malformed input");
+					throw new JSONException("Malformed input");
 				}
 				continue LOOP;
 			case '}':
@@ -228,7 +228,7 @@ public final class Decoder<T extends JSONSerializable> {
 				 * This should be the end of the  JSON string
 				 */
 				if(hasNext())
-					throw new ParseException("Unexpected end of input");
+					throw new JSONException("Unexpected end of input");
 				break SWITCH;
 			case ']':
 				/*
@@ -266,7 +266,7 @@ public final class Decoder<T extends JSONSerializable> {
 		try {
 			next = reader.read();
 		} catch ( IOException e ) {
-			throw new ParseException(e);
+			throw new JSONException(e);
 		}
 		return (char) current;
 	}
@@ -275,7 +275,7 @@ public final class Decoder<T extends JSONSerializable> {
 		return (char) previous;
 	}
 	
-	private T decode() throws ParseException {
+	private T decode() throws JSONException {
 		try {
 			T obj = null;
 			// Get the constructors for the wrapper
@@ -309,7 +309,7 @@ public final class Decoder<T extends JSONSerializable> {
 							// Because constructor parameter names are lost after compilation,
 							// constructor parameters need to specify their attribute name in the annotation
 							name = ((JSONAttribute) a).name();
-							if(name.equals(EMPTY_STRING)) throw new ParseException("Attribute name should be specified for constructor parameters");
+							if(name.equals(EMPTY_STRING)) throw new JSONException("Attribute name should be specified for constructor parameters");
 							// Check if this field can be filled based on the input
 							String strvalue = pairs.get(name);
 							// Skip to the next constructor if no value could be found
@@ -330,7 +330,7 @@ public final class Decoder<T extends JSONSerializable> {
 			// Use the default constructor if no other constructor was available
 			if(constructors.length == 0 ) obj = klass.newInstance();
 			// If the object is still null, throw an exception
-			if(obj == null) throw new ParseException(klass.getCanonicalName() + " could not be instantiated");
+			if(obj == null) throw new JSONException(klass.getCanonicalName() + " could not be instantiated");
 			
 			for (Field f : klass.getDeclaredFields()) {
 				// The field should have the JSONAttribute annotation and not have the final modifier
@@ -344,7 +344,7 @@ public final class Decoder<T extends JSONSerializable> {
 					String strvalue = pairs.get(name);
 					if(strvalue == null ) {
 						if(annotation.required())
-							throw new ParseException("Field " + name + " was required but undefined in input string");
+							throw new JSONException("Field " + name + " was required but undefined in input string");
 					} else {
 						f.setAccessible(true);
 						f.set(obj, strToValue(f.getType(), f.getGenericType(), strvalue));
@@ -353,10 +353,10 @@ public final class Decoder<T extends JSONSerializable> {
 			}
 	
 			return obj;
-		} catch ( ParseException e ) {
+		} catch ( JSONException e ) {
 			throw e; // Forward parse exceptions
 		} catch ( Exception e ) {
-			throw new ParseException(e); // Wrap all other exceptions (reflection exceptions basically)
+			throw new JSONException(e); // Wrap all other exceptions (reflection exceptions basically)
 		}
 	}
 
@@ -398,7 +398,7 @@ public final class Decoder<T extends JSONSerializable> {
 			Class<?> valueClass = (Class<?>) ((ParameterizedType) type).getActualTypeArguments()[1];
 			return (V) getMap((Class<? extends Map>) klass, valueClass, strvalue);
 		} else {
-			throw new ParseException(klass.getCanonicalName() + " is not serializable");
+			throw new JSONException(klass.getCanonicalName() + " is not serializable");
 		}
 	}
 	
@@ -445,7 +445,7 @@ public final class Decoder<T extends JSONSerializable> {
 	 * @return the String value of escaped String value of the characters
 	 *         between quotes
 	 */
-	public static String StringValueOf(String s) {
+	static String StringValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL))
 			return null;
 		int l = s.length();
@@ -503,7 +503,7 @@ public final class Decoder<T extends JSONSerializable> {
 	 * @param s JSON fragment
 	 * @return Boolean value of a JSON fragment
 	 */
-	public static Boolean BooleanValueOf(String s) {
+	static Boolean BooleanValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
 		return Boolean.valueOf(s);
 	}
@@ -512,74 +512,78 @@ public final class Decoder<T extends JSONSerializable> {
 	 * @param s JSON fragment
 	 * @return Byte value of a JSON fragment
 	 */
-	public static Byte ByteValueOf(String s) {
+	static Byte ByteValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
-		return Byte.valueOf(s);
+		try {
+			return Byte.valueOf(s);
+		} catch (NumberFormatException e ) {
+			throw new JSONException(e);
+		}
 	}
 
 	/**
 	 * @param s JSON fragment
 	 * @return Short value of a JSON fragment
 	 */
-	public static Short ShortValueOf(String s) {
+	static Short ShortValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
-		return Short.valueOf(s);
+		try {
+			return Short.valueOf(s);
+		} catch (NumberFormatException e ) {
+			throw new JSONException(e);
+		}
 	}
 
 	/**
 	 * @param s JSON fragment
 	 * @return Integer value of a JSON fragment
 	 */
-	public static Integer IntegerValueOf(String s) {
+	static Integer IntegerValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
-		return Integer.valueOf(s);
+		try {
+			return Integer.valueOf(s);
+		} catch (NumberFormatException e ) {
+			throw new JSONException(e);
+		}
 	}
 
 	/**
 	 * @param s JSON fragment
 	 * @return Long value of a JSON fragment
 	 */
-	public static Long LongValueOf(String s) {
+	static Long LongValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
-		return Long.valueOf(s);
+		try {
+			return Long.valueOf(s);
+		} catch (NumberFormatException e ) {
+			throw new JSONException(e);
+		}
 	}
 
 	/**
 	 * @param s JSON fragment
 	 * @return Float value of a JSON fragment
 	 */
-	public static Float FloatValueOf(String s) {
+	static Float FloatValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
-		return Float.valueOf(s);
+		try {
+			return Float.valueOf(s);
+		} catch (NumberFormatException e ) {
+			throw new JSONException(e);
+		}
 	}
 
 	/**
 	 * @param s JSON fragment
 	 * @return Double value of a JSON fragment
 	 */
-	public static Double DoubleValueOf(String s) {
+	static Double DoubleValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
-		return Double.valueOf(s);
-	}	
-
-
-	/**
-	 * A ParseException is thrown when an exception occurred during JSON parsing
-	 * 
-	 * @author Jan-Willem Gmelig Meyling
-	 */
-	public static class ParseException extends RuntimeException {
-		
-		private static final long serialVersionUID = -5453235887713621500L;
-
-		ParseException(Exception e) {
-			super("JSON String could not be parsed", e);
+		try {
+			return Double.valueOf(s);
+		} catch (NumberFormatException e ) {
+			throw new JSONException(e);
 		}
-
-		ParseException(String string) {
-			super(string);
-		}
-		
 	}
 	
 	/**
@@ -587,9 +591,9 @@ public final class Decoder<T extends JSONSerializable> {
 	 * @param entrypoint the main wrapper class
 	 * @param input the JSON input string
 	 * @return deserialized instance of class
-	 * @throws ParseException
+	 * @throws JSONException
 	 */
-	public static <T extends JSONSerializable> T decode(Class<T> entrypoint, String input) throws ParseException {
+	public static <T extends JSONSerializable> T decode(Class<T> entrypoint, String input) throws JSONException {
 		return new Decoder<T>(entrypoint, input).decode();
 	}
 	
@@ -598,9 +602,9 @@ public final class Decoder<T extends JSONSerializable> {
 	 * @param entrypoint the main wrapper class
 	 * @param io InputStream 
 	 * @return deserialized instance of class
-	 * @throws ParseException
+	 * @throws JSONException
 	 */
-	public static <T extends JSONSerializable> T decode(Class<T> entrypoint, InputStream io) throws ParseException {
+	public static <T extends JSONSerializable> T decode(Class<T> entrypoint, InputStream io) throws JSONException {
 		return new Decoder<T>(entrypoint, io).decode();
 	}
 }

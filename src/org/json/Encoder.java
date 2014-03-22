@@ -112,22 +112,4 @@ public class Encoder {
 		}
 	}
 	
-	/**
-	 * When an exception occurs during JSON encoding, a JSONException is thrown.
-	 * 
-	 * @author Jan-Willem Gmelig Meyling
-	 */
-	public static class JSONException extends RuntimeException {
-		
-		private static final long serialVersionUID = -5254654328847588624L;
-		
-		JSONException(String input) {
-			super(input);
-		}
-
-		JSONException(String input, Throwable cause) {
-			super(input, cause);
-		}
-	}
-	
 }
