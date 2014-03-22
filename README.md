@@ -63,6 +63,7 @@ public class POWWithRequirements implements JSONSerializable {
 ```
 
 ### Final attributes set through constructor
+*Note: it is required to set the field name for constructor parameters, because the parameter names are lost in the Java compiler*
 ```java
 public class FinalFields implements JSONSerializable {
 	@JSONAttribute public final String finalField;
