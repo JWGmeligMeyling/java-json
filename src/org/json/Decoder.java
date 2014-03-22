@@ -88,6 +88,9 @@ public final class Decoder<T extends JSONSerializable> {
 			char c = next();
 			SWITCH : switch(c) {
 			case ' ':
+			case '\t':
+			case '\n':
+			case '\r':
 				/*
 				 * Spaces can be ignored at this point. Spaces within quotes are
 				 * handled there.

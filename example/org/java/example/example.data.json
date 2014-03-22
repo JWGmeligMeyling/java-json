@@ -1,0 +1,10 @@
+{
+	id : 5555,
+	name : {
+		"firstname" : "Jan-Willem",
+		"lastname" : "Gmelig Meyling"
+	},
+	emailAdresses : {
+		"work" : "jan-willem@meylingmedia.nl"
+	}
+}
