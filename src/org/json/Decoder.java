@@ -27,10 +27,16 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * A decoder is used for JSON deserialization. A subclass of type
@@ -49,9 +55,16 @@ public final class Decoder<T extends JSONSerializable> {
 	private int index = 0;
 	private int depth = 0;
 	private boolean isKey = true;
+	private boolean isArray = false;
 	
 	private final Map<String, String> pairs = new HashMap<String, String>();
-
+	private final List<String> arrayContents = new ArrayList<String>();
+	
+	/**
+	 * Construct a new Decoder, that should return an object of Type {@code T}.
+	 * @param klass Type of Object that should be created
+	 * @param s JSON String that should be decoded
+	 */
 	private Decoder(Class<T> klass, String s) {
 		this.klass = klass;
 		this.s = s;
@@ -59,31 +72,57 @@ public final class Decoder<T extends JSONSerializable> {
 		parse();
 	}
 	
+	/**
+	 * This method parses the first level of the JSON String, and puts it's
+	 * values in the pairs Map - for objects - or the contents List - for
+	 * arrays. Then, the object can be instantiated later on with the
+	 * {@link #decode()} method.
+	 * 
+	 * @see {@link #decode()}
+	 */
 	private void parse() {
-		if (!this.hasNext() || this.next() != '{') {
-            throw new ParseException("A JSONObject text must begin with '{'");
-        }
-		depth++;
-		if(!this.hasNext()) {
-			throw new ParseException("Unexpected end of input");
-		}
-
 		String key = null;
 		StringBuilder sb = new StringBuilder();
 		
 		LOOP : while(this.hasNext()) {
 			char c = next();
 			SWITCH : switch(c) {
-			case ' ': // Ignore spaces
+			case ' ':
+				/*
+				 * Spaces can be ignored at this point. Spaces within quotes are
+				 * handled there.
+				 */
 				continue LOOP;
-			case ':': // After a : follows a value, switch modes and finalize method
-				if(!isKey) throw new ParseException("Unexpected value");
+			case ':':
+				/*
+				 * Colons separate keys from values in an JSON Object. When such
+				 * a comma is found, break the switch, and set the current
+				 * builder value as key, and continue to look for its value.
+				 * When already expecting a value, an exception is thrown. When
+				 * we're in a JSONArray, an exception is thrown as well; values
+				 * in a JSON Array should be separated by commas.
+				 */
+				if(isArray || !isKey) throw new ParseException("Unexpected value");
 				break SWITCH;
-			case ',': //  After a , follows a key, switch modes and finalize method
-				if(isKey) throw new ParseException("Unexpected key");
-				break SWITCH;
+			case ',': 
+				/*
+				 * Comma's separate values in an array and key value pairs in
+				 * objects. Check if we're in array mode, and if we're at the
+				 * current depth, if so, append the last value to the values
+				 * list, and clear the StringBuilder for the next value. If not,
+				 * break out of the switch, to complete a key or value.
+				 */
+				if(depth == 1 && isArray) {
+					arrayContents.add(sb.toString());
+					sb.setLength(0);
+					continue LOOP;
+				}
+				else break SWITCH;
 			case '"':
-			case '\'':  // Quoted string, find the next quote, and append the substring
+			case '\'':
+				/*
+				 * Quoted string, find the next quote, and append the substring 
+				 */
 				sb.append(c);
 				while(hasNext()) {
 					char next = next();
@@ -94,28 +133,81 @@ public final class Decoder<T extends JSONSerializable> {
 				}
 				throw new ParseException("Unexpected end of input");
 			case '[':
-			case '{': // We're entering a new JSON Object
-				if(isKey) throw new ParseException("Expected key a key, but got a value instead");
+				/*
+				 * This bracket marks the beginning of an array. If we're at
+				 * initial depth, the object we're parsing at the current level
+				 * is an array - switch to array mode. If not, the array should
+				 * be a value instead. Continue to the first matching closing
+				 * bracket and append all characters in between - these are
+				 * parsed recursively while instantiating this object.
+				 */
 				depth++;
+				if(depth == 1) {
+					isArray = true;
+					continue LOOP;
+				}
+				if(isKey) throw new ParseException("Expected key a key, but got a value instead");
 				sb.append(c);
 				while(hasNext()) {
 					char next = next();
 					sb.append(next);
-					if(next == '{' || next == '[') {
+					if(next == '[') {
 						depth++;
-					} else if (next == '}' || next == ']') {
+					} else if (next == ']') {
 						depth--;
-						if(depth == 1) { // At original level, continue upper loop
+						if(depth == 1) {
 							continue LOOP;
 						}
 					}
 				}
 				throw new ParseException("Malformed input");
-			case '}': // This should be the end of the  JSON string
+			case '{':
+				/*
+				 * This bracket marks the beginning of an object. If we're at
+				 * initial depth, the object we're parsing at the current level
+				 * is an object - stay in object mode. If we're not at initial
+				 * depth, this object should be a value. Skip to the next
+				 * matching closing bracket, and append all characters in
+				 * between to the StringBuilder. These are parsed recursively
+				 * while instantiating this object.
+				 */
+				if(isKey && !isArray && depth != 0) throw new ParseException("Expected key a key, but got a value instead");
+				depth++;
+				if(depth > 1 ) {
+					sb.append(c);
+					while(hasNext()) {
+						char next = next();
+						sb.append(next);
+						if(next == '{') {
+							depth++;
+						} else if (next == '}') {
+							depth--;
+							if(depth == 1) { // At original level, continue upper loop
+								continue LOOP;
+							}
+						}
+					}
+					throw new ParseException("Malformed input");
+				}
+				continue LOOP;
+			case '}':
+				/*
+				 * This should be the end of the  JSON string
+				 */
 				if(hasNext())
 					throw new ParseException("Unexpected end of input");
 				break SWITCH;
-			default: // All characters should be appended to the value StringBuilder
+			case ']':
+				/*
+				 * This should be the end of the Array
+				 */
+				if(depth == 1) {
+					arrayContents.add(sb.toString());
+					continue LOOP;
+				}
+				break SWITCH;
+			default:
+				// All characters should be appended to the value StringBuilder
 				sb.append(c);
 				continue LOOP;
 			}
@@ -157,9 +249,10 @@ public final class Decoder<T extends JSONSerializable> {
 			});
 			// Iterate through the constructors and look for a constructor that matches our data
 			CTORS : for ( Constructor<T> c : constructors ) {
-				Class<?>[] types = c.getParameterTypes();
+				Class<?>[] parameterClasses = c.getParameterTypes();
+				Type[] parameterTypes = c.getGenericParameterTypes();
 				Annotation[][] annotations = c.getParameterAnnotations();
-				int l = types.length;
+				int l = parameterClasses.length;
 				// Create an array that will contains the argument with which the constructor will be invoked
 				Object[] arguments = new Object[l];
 				// Iterate over the parameters
@@ -181,7 +274,7 @@ public final class Decoder<T extends JSONSerializable> {
 							String strvalue = pairs.get(name);
 							// Skip to the next constructor if no value could be found
 							if(strvalue == null && annotation.required()) continue CTORS;
-							arguments[i] = strToValue(types[i], strvalue);
+							arguments[i] = strToValue(parameterClasses[i], parameterTypes[i], strvalue);
 							// The annotation is found, skip to the next parameter
 							continue PARAMS;
 						}
@@ -214,7 +307,7 @@ public final class Decoder<T extends JSONSerializable> {
 							throw new ParseException("Field " + name + " was required but undefined in input string");
 					} else {
 						f.setAccessible(true);
-						f.set(obj, strToValue(f.getType(), strvalue));
+						f.set(obj, strToValue(f.getType(), f.getGenericType(), strvalue));
 					}
 				}
 			}
@@ -227,31 +320,83 @@ public final class Decoder<T extends JSONSerializable> {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	private static Object strToValue(Class<?> type, String strvalue) {
+	/**
+	 * Convert a JSON String value to an Object
+	 * @param klass
+	 * @param type
+	 * @param strvalue
+	 * @return
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private static <V> V strToValue(Class<V> klass, Type type, String strvalue) throws InstantiationException, IllegalAccessException {
 		if(strvalue == null) {
 			return null;
-		} else if(type.equals(String.class)) {
-			return StringValueOf(strvalue);
-		} else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
-			return BooleanValueOf(strvalue);
-		} else if (type.equals(Byte.class) || type.equals(byte.class)) {
-			return ByteValueOf(strvalue);
-		} else if ( type.equals(Short.class) || type.equals(short.class)) {
-			return ShortValueOf(strvalue);
-		} else if (type.equals(Integer.class) || type.equals(int.class)) {
-			return IntegerValueOf(strvalue);
-		} else if (type.equals(Long.class) || type.equals(long.class)) {
-			return LongValueOf(strvalue);
-		} else if (type.equals(Float.class) || type.equals(float.class)) {
-			return FloatValueOf(strvalue);
-		} else if (type.equals(Double.class) || type.equals(double.class)) {
-			return DoubleValueOf(strvalue);
-		} else if( JSONSerializable.class.isAssignableFrom(type)) {
-			return decode((Class<? extends JSONSerializable>) type, strvalue);
+		} else if(klass.equals(String.class)) {
+			return (V) StringValueOf(strvalue);
+		} else if (klass.equals(Boolean.class) || klass.equals(boolean.class)) {
+			return (V) BooleanValueOf(strvalue);
+		} else if (klass.equals(Byte.class) || klass.equals(byte.class)) {
+			return (V) ByteValueOf(strvalue);
+		} else if ( klass.equals(Short.class) || klass.equals(short.class)) {
+			return (V) ShortValueOf(strvalue);
+		} else if (klass.equals(Integer.class) || klass.equals(int.class)) {
+			return (V) IntegerValueOf(strvalue);
+		} else if (klass.equals(Long.class) || klass.equals(long.class)) {
+			return (V) LongValueOf(strvalue);
+		} else if (klass.equals(Float.class) || klass.equals(float.class)) {
+			return (V) FloatValueOf(strvalue);
+		} else if (klass.equals(Double.class) || klass.equals(double.class)) {
+			return (V) DoubleValueOf(strvalue);
+		} else if( JSONSerializable.class.isAssignableFrom(klass)) {
+			return (V) decode((Class<? extends JSONSerializable>) klass, strvalue);
+		} else if ( Collection.class.isAssignableFrom(klass)) {
+			Class<?> valueClass = (Class<?>) ((ParameterizedType) type).getActualTypeArguments()[0];
+			return (V) getArray((Class<? extends Collection>) klass, valueClass, strvalue);
+		} else if ( Map.class.isAssignableFrom(klass)) {
+			Class<?> valueClass = (Class<?>) ((ParameterizedType) type).getActualTypeArguments()[1];
+			return (V) getMap((Class<? extends Map>) klass, valueClass, strvalue);
 		} else {
-			throw new ParseException(type.getCanonicalName() + " is not serializable");
+			throw new ParseException(klass.getCanonicalName() + " is not serializable");
 		}
+	}
+	
+	/**
+	 * Instantiate a new {@code Collection} based on the given implementation and generic type
+	 * valueClass, and fill it with values parsed from the input string. 
+	 * @param klass {@code Class} for the {@code Collection} implementation
+	 * @param valueClass {@code Class} for the values in the collection
+	 * @param input JSONString containing the array and it's values
+	 * @return the newly instantiated Collection
+	 * @throws InstantiationException If the collection could not be instantiated
+	 * @throws IllegalAccessException If no elements can be added to the collection
+	 */
+	private static <T extends Collection<V>, V> T getArray(Class<T> klass, Class<V> valueClass, String input) throws InstantiationException, IllegalAccessException {
+		@SuppressWarnings("unchecked") T instance = (klass.isInterface()) ? (T) new ArrayList<V>(): klass.newInstance();
+		Decoder<JSONSerializable> decoder = new Decoder<JSONSerializable>(JSONSerializable.class, input);
+		for(String strvalue : decoder.arrayContents ) {
+			instance.add(strToValue(valueClass, null, strvalue));
+		}
+		return instance;
+	}
+	
+	/**
+	 * Instantiate a new {@code Map} based on the given implementation.
+	 * @param klass Implementation for the map
+	 * @param valueClass Implementation for the values
+	 * @param input JSONString containing the map and it's key value pairs
+	 * @return the newly instantiated Map
+	 * @throws InstantiationException If the map could not be instantiated
+	 * @throws IllegalAccessException If no key value pairs could be added
+	 */
+	private static <T extends Map<String, V>, V> T getMap(Class<T> klass, Class<V> valueClass, String input) throws InstantiationException, IllegalAccessException {
+		@SuppressWarnings("unchecked") T instance = (klass.isInterface()) ? (T) new HashMap<String, V>() : klass.newInstance();
+		Decoder<JSONSerializable> decoder = new Decoder<JSONSerializable>(JSONSerializable.class, input);
+		for( Entry<String, String> entry : decoder.pairs.entrySet() ) {
+			instance.put(entry.getKey(), strToValue(valueClass, null, entry.getValue()));
+		}
+		return instance;
 	}
 
 	/**
@@ -313,41 +458,75 @@ public final class Decoder<T extends JSONSerializable> {
 		return sb.toString();
 	}
 
+	/**
+	 * @param s JSON fragment
+	 * @return Boolean value of a JSON fragment
+	 */
 	public static Boolean BooleanValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
 		return Boolean.valueOf(s);
 	}
 
+	/**
+	 * @param s JSON fragment
+	 * @return Byte value of a JSON fragment
+	 */
 	public static Byte ByteValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
 		return Byte.valueOf(s);
 	}
 
+	/**
+	 * @param s JSON fragment
+	 * @return Short value of a JSON fragment
+	 */
 	public static Short ShortValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
 		return Short.valueOf(s);
 	}
 
+	/**
+	 * @param s JSON fragment
+	 * @return Integer value of a JSON fragment
+	 */
 	public static Integer IntegerValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
 		return Integer.valueOf(s);
 	}
 
+	/**
+	 * @param s JSON fragment
+	 * @return Long value of a JSON fragment
+	 */
 	public static Long LongValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
 		return Long.valueOf(s);
 	}
 
+	/**
+	 * @param s JSON fragment
+	 * @return Float value of a JSON fragment
+	 */
 	public static Float FloatValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
 		return Float.valueOf(s);
 	}
 
+	/**
+	 * @param s JSON fragment
+	 * @return Double value of a JSON fragment
+	 */
 	public static Double DoubleValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL)) return null;
 		return Double.valueOf(s);
 	}	
-	
+
+
+	/**
+	 * A ParseException is thrown when an exception occurred during JSON parsing
+	 * 
+	 * @author Jan-Willem Gmelig Meyling
+	 */
 	public static class ParseException extends RuntimeException {
 		
 		private static final long serialVersionUID = -5453235887713621500L;

@@ -1,4 +1,7 @@
 package org.json.test;
+import java.util.List;
+import java.util.Map;
+
 import org.json.JSONAttribute;
 import org.json.JSONSerializable;
 
@@ -312,5 +315,248 @@ public class TestWrappers {
 		}
 		
 	}
+	
+	public static class ObjectWithArray implements JSONSerializable {
+		@JSONAttribute String stringValue;
+		@JSONAttribute List<String> stringList;
+		
+		/* (non-Javadoc)
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((stringList == null) ? 0 : stringList.hashCode());
+			result = prime * result
+					+ ((stringValue == null) ? 0 : stringValue.hashCode());
+			return result;
+		}
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ObjectWithArray other = (ObjectWithArray) obj;
+			if (stringList == null) {
+				if (other.stringList != null)
+					return false;
+			} else if (!stringList.equals(other.stringList))
+				return false;
+			if (stringValue == null) {
+				if (other.stringValue != null)
+					return false;
+			} else if (!stringValue.equals(other.stringValue))
+				return false;
+			return true;
+		}
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "ObjectWithArray [stringValue=" + stringValue
+					+ ", stringList=" + stringList + "]";
+		}
+		
+	}
+	
+	public static class ObjectWithFinalArray implements JSONSerializable {
+		@JSONAttribute final List<String> stringList;
+		
+		public ObjectWithFinalArray(@JSONAttribute(name="stringList") List<String> list ) {
+			this.stringList = list;
+		}
 
+		/* (non-Javadoc)
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((stringList == null) ? 0 : stringList.hashCode());
+			return result;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ObjectWithFinalArray other = (ObjectWithFinalArray) obj;
+			if (stringList == null) {
+				if (other.stringList != null)
+					return false;
+			} else if (!stringList.equals(other.stringList))
+				return false;
+			return true;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "ObjectWithFinalArray [list=" + stringList + "]";
+		}
+		
+	}
+
+	public static class ObjectWithComplexArray implements JSONSerializable {
+		@JSONAttribute String stringValue;
+		@JSONAttribute List<PlainObjectWrapper> complexList;
+		
+		/* (non-Javadoc)
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((complexList == null) ? 0 : complexList.hashCode());
+			result = prime * result
+					+ ((stringValue == null) ? 0 : stringValue.hashCode());
+			return result;
+		}
+		
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ObjectWithComplexArray other = (ObjectWithComplexArray) obj;
+			if (complexList == null) {
+				if (other.complexList != null)
+					return false;
+			} else if (!complexList.equals(other.complexList))
+				return false;
+			if (stringValue == null) {
+				if (other.stringValue != null)
+					return false;
+			} else if (!stringValue.equals(other.stringValue))
+				return false;
+			return true;
+		}
+		
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "ObjectWithComplexArray [stringValue=" + stringValue
+					+ ", complexList=" + complexList + "]";
+		}
+		
+	}
+	
+	public static class ObjectWithMap implements JSONSerializable {
+		@JSONAttribute Map<String, String> myMap;
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((myMap == null) ? 0 : myMap.hashCode());
+			return result;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ObjectWithMap other = (ObjectWithMap) obj;
+			if (myMap == null) {
+				if (other.myMap != null)
+					return false;
+			} else if (!myMap.equals(other.myMap))
+				return false;
+			return true;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "ObjectWithMap [myMap=" + myMap + "]";
+		}
+		
+	}
+	
+	public static class ObjectWithComplexMap implements JSONSerializable {
+		@JSONAttribute Map<String, PlainObjectWrapper> complexObject;
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((complexObject == null) ? 0 : complexObject.hashCode());
+			return result;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ObjectWithComplexMap other = (ObjectWithComplexMap) obj;
+			if (complexObject == null) {
+				if (other.complexObject != null)
+					return false;
+			} else if (!complexObject.equals(other.complexObject))
+				return false;
+			return true;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "ObjectWithComplexMap [complexObject=" + complexObject + "]";
+		}
+		
+	}
+	
 }

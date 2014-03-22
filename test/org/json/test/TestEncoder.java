@@ -1,10 +1,18 @@
 package org.json.test;
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import org.json.Decoder;
 import org.json.Encoder;
 import org.json.test.TestWrappers.ComplexObject;
 import org.json.test.TestWrappers.EmptyObjectWrapper;
 import org.json.test.TestWrappers.FinalFields;
+import org.json.test.TestWrappers.ObjectWithArray;
+import org.json.test.TestWrappers.ObjectWithComplexArray;
+import org.json.test.TestWrappers.ObjectWithComplexMap;
+import org.json.test.TestWrappers.ObjectWithMap;
 import org.json.test.TestWrappers.PlainObjectWrapper;
 import org.json.test.TestWrappers.TestPrivateAccess;
 import org.junit.Test;
@@ -72,4 +80,94 @@ public class TestEncoder {
 		assertEquals(expected, Encoder.encode(object));
 	}
 	
+	@Test public final void testNullList() {
+		ObjectWithArray object = new ObjectWithArray();
+		object.stringValue = "myStrValue";
+		object.stringList = null;
+		assertEquals("{\"stringValue\":\"myStrValue\",\"stringList\":null}", Encoder.encode(object));
+	}
+	
+	@Test public final void testEmptyList() {
+		ObjectWithArray object = new ObjectWithArray();
+		object.stringValue = "myStrValue";
+		object.stringList = new ArrayList<String>();
+		assertEquals("{\"stringValue\":\"myStrValue\",\"stringList\":[]}", Encoder.encode(object));
+	}
+	
+	@Test public final void testSimpleList() {
+		ObjectWithArray object = new ObjectWithArray();
+		object.stringValue = "myStrValue";
+		object.stringList = new ArrayList<String>();
+		object.stringList.add("value1");
+		object.stringList.add("value2");
+		assertEquals("{\"stringValue\":\"myStrValue\",\"stringList\":[\"value1\",\"value2\"]}", Encoder.encode(object));
+	}
+	
+	@Test public final void testComplexList() {
+		String expected = "{\"stringValue\":\"myStringvalue\",\"complexList\":["
+				+ "{\"value\":\"test\",\"value1\":2342342,\"value2\":23.2342352353,\"value3\":true},"
+				+ "{\"value\":\"test\",\"value1\":2342342,\"value2\":23.2342352353,\"value3\":true}"
+			+ "]}";
+		
+		PlainObjectWrapper object1 = new PlainObjectWrapper();
+		object1.value = "test";
+		object1.value1  = 2342342;
+		object1.value2 = 23.2342352353;
+		object1.value3 = true;
+
+		PlainObjectWrapper object2 = new PlainObjectWrapper();
+		object2.value = "test";
+		object2.value1  = 2342342;
+		object2.value2 = 23.2342352353;
+		object2.value3 = true;
+		
+		ObjectWithComplexArray object = new ObjectWithComplexArray();
+		object.stringValue = "myStringvalue";
+		object.complexList = new ArrayList<PlainObjectWrapper>();
+		object.complexList.add(object1);
+		object.complexList.add(object2);
+		
+		assertEquals(expected, Encoder.encode(object));
+	}
+
+	@Test public final void testNullMap() {
+		ObjectWithMap object = new ObjectWithMap();
+		object.myMap = null;
+		assertEquals("{\"myMap\":null}", Encoder.encode(object));
+	}
+
+	@Test public final void testEmptyMap() {
+		ObjectWithMap object = new ObjectWithMap();
+		object.myMap = new HashMap<String, String>();
+		assertEquals("{\"myMap\":{}}", Encoder.encode(object));
+	}
+
+	@Test public final void testSimpleMap() {
+		ObjectWithMap object = new ObjectWithMap();
+		object.myMap = new HashMap<String, String>();
+		object.myMap.put("key1", "value1");
+		object.myMap.put("key2", "value2");
+		assertEquals("{\"myMap\":{\"key2\":\"value2\",\"key1\":\"value1\"}}", Encoder.encode(object));
+	}
+
+	@Test public final void testComplexMap() {
+		ObjectWithComplexMap object = new ObjectWithComplexMap();
+		object.complexObject = new HashMap<String, PlainObjectWrapper>();
+		
+		PlainObjectWrapper object1 = new PlainObjectWrapper();
+		object1.value = "test";
+		object1.value1  = 2342342;
+		object1.value2 = 23.2342352353;
+		object1.value3 = true;
+		object.complexObject.put("key1", object1);
+		
+		PlainObjectWrapper object2 = new PlainObjectWrapper();
+		object2.value = "test";
+		object2.value1  = 2342342;
+		object2.value2 = 23.2342352353;
+		object2.value3 = false;
+		object.complexObject.put("key2", object2);
+		
+		assertEquals(Encoder.encode(Decoder.decode(ObjectWithComplexMap.class, Encoder.encode(object))), Encoder.encode(object));
+	}
 }

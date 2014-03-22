@@ -61,10 +61,37 @@ public class FinalFields implements JSONSerializable {
 	// ...
 }
 ```
-
+### Converting JSON Objects to Maps
+```java
+public class ObjectWithMap implements JSONSerializable {
+	@JSONAttribute Map<String, String> myMap;
+```
+Corresponding JSON fragment:
+```js
+{
+	myMap : {
+		key : "value",
+		key2 : "value2"
+	}
+}
+```
+*Note: this works for Numbers and JSONSerializable objects as well*
+### Converting JSON Arrays to Lists
+```java
+public class ObjectWithArray implements JSONSerializable {
+	@JSONAttribute List<String> stringList;
+}
+```
+Corresponding JSON fragment:
+```js
+{
+	stringList : [ "value1", "value2" ]
+}
+*Note: this works for Numbers and JSONSerializable objects as well*
+```
 ### Complex structures (objects within objects)
 ```java
-public static class ComplexObject implements JSONSerializable {
+public class ComplexObject implements JSONSerializable {
 	@JSONAttribute public String test;
 	@JSONAttribute public PlainObjectWrapper innerObject;
 	// ...
@@ -84,7 +111,5 @@ Objects of above class can be instantiated from, for example, from the following
 ```
 
 ## Todo's
-* To JSONString encoder
-* Support for Arrays (`@JSONArray` annotation)
-* Support for HashMaps (`@JSONMap` annotation)
+* Pretty print for encoder
 * Ability to use attribute mutators
