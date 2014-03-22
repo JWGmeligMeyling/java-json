@@ -1,10 +1,8 @@
 package org.java.example;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
 import java.util.Map;
 
 import org.json.Decoder;
@@ -51,12 +49,8 @@ public class example {
 	}
 	
 	public static void main(String[] args) throws ParseException, IOException {
-		System.out.println(Decoder.decode(User.class, readFile("example/org/java/example/example.data.json", Charset.defaultCharset())));
+		InputStream in = new FileInputStream("example/org/java/example/example.data.json");
+		System.out.println(Decoder.decode(User.class, in));
 	}
-
-	private static String readFile(String path, Charset encoding)
-			throws IOException {
-		byte[] encoded = Files.readAllBytes(Paths.get(path));
-		return encoding.decode(ByteBuffer.wrap(encoded)).toString();
-	}
+	
 }

@@ -23,6 +23,11 @@ package org.json;
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -49,13 +54,15 @@ public final class Decoder<T extends JSONSerializable> {
 	private final static String NULL = "null";
 	private final static String EMPTY_STRING = "";
 	private final Class<T> klass;
-	private final int length;
-	private final String s;
 	
-	private int index = 0;
 	private int depth = 0;
 	private boolean isKey = true;
 	private boolean isArray = false;
+	
+	private final Reader reader;
+	private int current = 0;
+	private int previous = 0;
+	private int next = 0;
 	
 	private final Map<String, String> pairs = new HashMap<String, String>();
 	private final List<String> arrayContents = new ArrayList<String>();
@@ -63,13 +70,36 @@ public final class Decoder<T extends JSONSerializable> {
 	/**
 	 * Construct a new Decoder, that should return an object of Type {@code T}.
 	 * @param klass Type of Object that should be created
-	 * @param s JSON String that should be decoded
+	 * @param reader the Reader
 	 */
-	private Decoder(Class<T> klass, String s) {
+	private Decoder(Class<T> klass, Reader reader) {
 		this.klass = klass;
-		this.s = s;
-		this.length = s.length();
+		this.reader = reader;
+		try {
+			// Read the first character
+			this.next = reader.read();
+		} catch (IOException e) {
+			throw new ParseException(e);
+		}
 		parse();
+	}
+	
+	/**
+	 * Construct a new Decoder, that should return an object of Type T
+	 * @param klass Type of Object that should be created
+	 * @param input String that should be decoded
+	 */
+	private Decoder(Class<T> klass, String input) {
+		this(klass, new StringReader(input));
+	}
+	
+	/**
+	 * Construct a new Decoder, that should return an object of Type T
+	 * @param klass Type of Object that should be created
+	 * @param io InputStream
+	 */
+	private Decoder(Class<T> klass, InputStream io) {
+		this(klass, new InputStreamReader(io));
 	}
 	
 	/**
@@ -227,15 +257,22 @@ public final class Decoder<T extends JSONSerializable> {
 	}
 	
 	private boolean hasNext() {
-		return index < length;
+		return next != -1;
 	}
 	
 	private char next() {
-		return s.charAt(index++);
+		previous = current;
+		current = next;
+		try {
+			next = reader.read();
+		} catch ( IOException e ) {
+			throw new ParseException(e);
+		}
+		return (char) current;
 	}
 	
 	private char previous() {
-		return s.charAt(index-2);
+		return (char) previous;
 	}
 	
 	private T decode() throws ParseException {
@@ -328,7 +365,7 @@ public final class Decoder<T extends JSONSerializable> {
 	 * @param klass
 	 * @param type
 	 * @param strvalue
-	 * @return
+	 * @return An Object of given type for the parsed String
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
@@ -405,7 +442,8 @@ public final class Decoder<T extends JSONSerializable> {
 	/**
 	 * Get an escaped String ValueOf from input
 	 * @param s
-	 * @return
+	 * @return the String value of escaped String value of the characters
+	 *         between quotes
 	 */
 	public static String StringValueOf(String s) {
 		if(s.equalsIgnoreCase(NULL))
@@ -553,5 +591,16 @@ public final class Decoder<T extends JSONSerializable> {
 	 */
 	public static <T extends JSONSerializable> T decode(Class<T> entrypoint, String input) throws ParseException {
 		return new Decoder<T>(entrypoint, input).decode();
+	}
+	
+	/**
+	 * Decode a JSON string
+	 * @param entrypoint the main wrapper class
+	 * @param io InputStream 
+	 * @return deserialized instance of class
+	 * @throws ParseException
+	 */
+	public static <T extends JSONSerializable> T decode(Class<T> entrypoint, InputStream io) throws ParseException {
+		return new Decoder<T>(entrypoint, io).decode();
 	}
 }
