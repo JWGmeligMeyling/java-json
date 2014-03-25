@@ -114,7 +114,7 @@ public class Encoder {
 					w.append('\n');
 					indent(w, newIndent);
 				}
-				writeString(w, field.getName());
+				writeString(w, name);
 				if(IS_INDENT) w.append(' ');
 				w.append(':');
 				if(IS_INDENT) w.append(' ');

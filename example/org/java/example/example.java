@@ -57,7 +57,7 @@ public class example {
 		System.out.println(user.toString());
 		
 		// Print encoded JSON
-		Encoder.setIndent(4);
+		Encoder.setIndent(3);
 		System.out.println(Encoder.encode(user));
 	}
 	
