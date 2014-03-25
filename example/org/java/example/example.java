@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 import org.json.Decoder;
+import org.json.Encoder;
 import org.json.JSONAttribute;
 import org.json.JSONException;
 import org.json.JSONSerializable;
@@ -49,8 +50,15 @@ public class example {
 	}
 	
 	public static void main(String[] args) throws IOException, JSONException {
+		// Read file, create input stream
 		InputStream in = new FileInputStream("example/org/java/example/example.data.json");
-		System.out.println(Decoder.decode(User.class, in));
+		User user = Decoder.decode(User.class, in);
+		// Print parsed User instance
+		System.out.println(user.toString());
+		
+		// Print encoded JSON
+		Encoder.setIndent(4);
+		System.out.println(Encoder.encode(user));
 	}
 	
 }

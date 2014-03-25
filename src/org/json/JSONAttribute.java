@@ -1,7 +1,8 @@
 package org.json;
 /**
  * Copyright 2014 Jan-Willem Gmelig Meyling. Based on the Simple Framework
- * written by Niall Gallagher.
+ * written by Niall Gallagher and the JSON specification described by
+ * Douglas Crockford.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -52,13 +53,5 @@ public @interface JSONAttribute {
 	 * @return true if the element is required, false otherwise
 	 */
 	boolean required() default false;
-
-	/**
-	 * This represents an explicit type that should be used for the annotated
-	 * field or method.
-	 * 
-	 * @return the explicit type to use for this
-	 */
-	Class<?> type() default void.class;
 
 }

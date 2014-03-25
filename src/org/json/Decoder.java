@@ -1,7 +1,8 @@
 package org.json;
 /**
  * Copyright 2014 Jan-Willem Gmelig Meyling. Based on the Simple Framework
- * written by Niall Gallagher.
+ * written by Niall Gallagher and the JSON specification described by
+ * Douglas Crockford.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
